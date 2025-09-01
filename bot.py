@@ -63,7 +63,7 @@ async def 경고(interaction: discord.Interaction, 횟수: int, 대상: discord.
 
     await update_role(interaction.guild, 대상, new_count, "경고")
 
-    embed = discord.Embed(title="⚠️ 경고 발부", color=discord.Color.red())
+    embed = discord.Embed(title="! 경고 지급", color=discord.Color.red())
     embed.add_field(name="대상", value=대상.mention, inline=True)
     embed.add_field(name="누적 경고", value=f"{new_count}회", inline=True)
     embed.add_field(name="사유", value=사유, inline=False)
@@ -85,7 +85,7 @@ async def 주의(interaction: discord.Interaction, 횟수: int, 대상: discord.
 
     await update_role(interaction.guild, 대상, new_count, "주의")
 
-    embed = discord.Embed(title="🟡 주의 발부", color=discord.Color.gold())
+    embed = discord.Embed(title="! 주의 지급", color=discord.Color.gold())
     embed.add_field(name="대상", value=대상.mention, inline=True)
     embed.add_field(name="누적 주의", value=f"{new_count}회", inline=True)
     embed.add_field(name="사유", value=사유, inline=False)
@@ -126,6 +126,27 @@ async def 경고삭제(interaction: discord.Interaction, 대상: discord.Member)
         await interaction.response.send_message(f"{대상.mention}님의 경고 기록을 삭제했습니다.")
     else:
         await interaction.response.send_message(f"{대상.mention}님은 경고 기록이 없습니다.")
+
+# 여기에 주의삭제 명령어 추가
+@tree.command(name="주의삭제", description="유저의 주의 횟수를 삭제합니다.")
+@app_commands.describe(대상="주의를 삭제할 유저")
+async def 주의삭제(interaction: discord.Interaction, 대상: discord.Member):
+    guild_id = interaction.guild.id
+    user_id = 대상.id
+
+    if guild_id in bot.cautions and user_id in bot.cautions[guild_id]:
+        count = bot.cautions[guild_id][user_id]
+        del bot.cautions[guild_id][user_id]
+
+        old_role_id = cautions_roles.get(count)
+        if old_role_id:
+            role = interaction.guild.get_role(old_role_id)
+            if role and role in 대상.roles:
+                await 대상.remove_roles(role)
+
+        await interaction.response.send_message(f"{대상.mention}님의 주의 기록을 삭제했습니다.")
+    else:
+        await interaction.response.send_message(f"{대상.mention}님은 주의 기록이 없습니다.")
 
 @bot.event
 async def on_ready():
