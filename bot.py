@@ -119,4 +119,4 @@ async def on_ready():
     except Exception as e:
         print(f"명령어 등록 실패: {e}")
 
-bot.run(TOKEN1)
+bot.run(TOKEN_1)
