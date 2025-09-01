@@ -13,24 +13,40 @@ intents.members = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 tree = bot.tree
 
-# 경고 및 주의 기록
 warnings = {}  # { guild_id: { user_id: count } }
 bot.cautions = {}  # { guild_id: { user_id: count } }
 
+# 경고 횟수별 역할 ID 매핑
+warnings_roles = {
+    1: 1411609989969219614,  # 경고1회
+    2: 1411609990648696903,  # 경고2회
+    3: 1411610001264480276,  # 경고3회
+    4: 1411610001784438804,  # 경고4회
+}
+
+# 주의 횟수별 역할 ID 매핑
+cautions_roles = {
+    1: 1411609945937547416,  # 주의1회
+    2: 1411609988161470564,  # 주의2회
+    3: 1411609989138747483,  # 주의3회
+}
+
 async def update_role(guild, member, count, type_):
-    role_name = f"{type_} {count}회"
-    old_role_name = f"{type_} {count - 1}회"
+    # type_이 "경고"면 warnings_roles, "주의"면 cautions_roles 사용
+    roles_map = warnings_roles if type_ == "경고" else cautions_roles
 
-    role = discord.utils.get(guild.roles, name=role_name)
-    if not role:
-        role = await guild.create_role(name=role_name)
+    role_id = roles_map.get(count)
+    old_role_id = roles_map.get(count - 1)
 
-    old_role = discord.utils.get(guild.roles, name=old_role_name)
-    if old_role and old_role in member.roles:
-        await member.remove_roles(old_role)
+    if old_role_id:
+        old_role = guild.get_role(old_role_id)
+        if old_role and old_role in member.roles:
+            await member.remove_roles(old_role)
 
-    if role not in member.roles:
-        await member.add_roles(role)
+    if role_id:
+        role = guild.get_role(role_id)
+        if role and role not in member.roles:
+            await member.add_roles(role)
 
 @tree.command(name="경고", description="유저에게 경고를 부여합니다.")
 @app_commands.describe(횟수="경고 횟수", 대상="경고를 받을 유저", 사유="경고 사유")
@@ -101,10 +117,11 @@ async def 경고삭제(interaction: discord.Interaction, 대상: discord.Member)
         count = warnings[guild_id][user_id]
         del warnings[guild_id][user_id]
 
-        role_name = f"경고 {count}회"
-        role = discord.utils.get(interaction.guild.roles, name=role_name)
-        if role and role in 대상.roles:
-            await 대상.remove_roles(role)
+        old_role_id = warnings_roles.get(count)
+        if old_role_id:
+            role = interaction.guild.get_role(old_role_id)
+            if role and role in 대상.roles:
+                await 대상.remove_roles(role)
 
         await interaction.response.send_message(f"{대상.mention}님의 경고 기록을 삭제했습니다.")
     else:
